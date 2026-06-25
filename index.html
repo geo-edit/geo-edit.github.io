@@ -1,0 +1,1079 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GeoEdit: Geometry-Aware Object Editing via Dual-Branch Denoising</title>
+    <meta property="og:description" content="GeoEdit: Geometry-Aware Object Editing via Dual-Branch Denoising"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --header-height: 74px;
+            --dark-background: #0d0d0d;
+            --text-color: #e0e0e0;
+            --heading-color: #f0f0f0;
+            --subtle-text-color: #a0a0a0;
+            --border-color: #333;
+            --accent-green: #22D3EE;
+            --gradient-start: #8a7ff8;
+            --gradient-end: #4d90fe;
+            --gcol: rgb(70, 0, 120);
+            --ccol: rgb(90, 0, 150);
+            --scol: rgb(110, 0, 180);
+            --ecol: rgb(130, 20, 200);
+            --dcol: rgb(150, 40, 215);
+            --icol: rgb(170, 70, 225);
+            --tcol: rgb(190, 100, 235);
+        }
+
+        body {
+    font-family: 'Google Sans', sans-serif;
+    background-color: var(--dark-background);
+    color: var(--text-color);
+    margin: 0;
+    font-size: 16px;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 0px;
+        }
+
+        main {
+            padding-top: var(--header-height);
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+        
+        /* Header */
+        gemini-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(13, 13, 13, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            /* padding: 0 40px; */
+            color: #fff;
+        }
+
+        ._content_l9x19_124 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            gap: 60px;
+        }
+
+        ._logo_l9x19_75 svg {
+            height: 28px;
+            fill: #fff;
+        }
+        
+        nav._links_l9x19_177 ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+            margin: 0;
+            padding: 0;
+        }
+        nav._links_l9x19_177 a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        nav._links_l9x19_177 a:hover {
+            color: #fff;
+        }
+
+        ._button_xe5r4_75 {
+            background: var(--accent-green);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        ._button_xe5r4_75:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 15px rgba(118, 185, 0, 0.5);
+        }
+
+        /* Spacers */
+        ._spacer_8k2eh_74 { height: 80px; }
+        .spacer-large { height: 120px; }
+        .spacer-small { height: 40px; }
+
+
+        /* Typography */
+        h1, h2, h3 {
+            color: var(--heading-color);
+            text-align: center;
+            font-weight: 700;
+        }
+        
+        h1 { font-size: 3.5em; line-height: 1.1; }
+        h2 { font-size: 2.8em; line-height: 1.2; }
+        h3 { font-size: 1.8em; line-height: 1.3; margin-top: 60px; }
+
+        .accent-text { color: var(--accent-green); }
+        .gradient-text {
+            background: -webkit-linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p, .caption-left, .caption-center {
+            font-size: 1.1em;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 15px auto;
+            color: var(--subtle-text-color);
+            text-align: left;
+        }
+        
+        #abstract p { text-align: justify; }
+        .text-center { text-align: center; }
+        .caption-center { text-align: center; }
+
+        /* Submission badge */
+        .submission-badge {
+            display: block;
+            width: fit-content;
+            margin: 8px auto 0 auto;
+            padding: 4px 12px;
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 1.05em;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 40px auto;
+            width: 80%;
+        }
+
+        /* Sections */
+        section { padding: 0px 0; }
+        .author-row { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+        .author-row .col-4 { flex: 1; max-width: 25%; text-align: center; }
+        .author-row a { color: var(--text-color); text-decoration: none; font-weight: 500; }
+        .affil-row { text-align: center; margin-top: 15px; color: var(--subtle-text-color); }
+        .venue { margin-top:20px; font-style: italic; }
+
+        /* Video Display Module */
+        .video-display-module { margin-top: 40px; }
+        .view-toggle { text-align: center; margin-bottom: 20px; }
+        .view-toggle-btn { background: transparent; border: 1px solid var(--border-color); color: var(--subtle-text-color); padding: 8px 16px; margin: 0 5px; border-radius: 20px; cursor: pointer; transition: all 0.3s; }
+        .view-toggle-btn.active { background-color: var(--accent-green); color: #000; border-color: var(--accent-green); }
+        .view-content { display: none; }
+        .view-content.active { display: block; }
+        .new-video-container { background-color: #000; border-radius: 16px; overflow: hidden; margin: 20px auto; max-width: 900px; }
+        .new-video { width: 100%; display: block; }
+        .new-slide-menu { display: flex; justify-content: center; margin: 20px 0; }
+        .new-dots { display: flex; list-style: none; padding: 0; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .new-scene-pill { cursor: pointer; border: none; background: transparent; padding: 0; }
+        .new-card-img { width: 60px; height: 60px; border: 3px solid var(--border-color); border-radius: 12px; transition: all 0.3s ease; }
+        .new-scene-pill:hover .new-card-img { transform: scale(1.1); border-color: var(--subtle-text-color); }
+        .new-scene-pill.active .new-card-img { width: 75px; height: 75px; border-color: var(--accent-green); box-shadow: 0 0 15px rgba(118, 185, 0, 0.6); }
+        
+        .new-center-pills { list-style: none; padding: 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .new-method-pill a { color: var(--subtle-text-color); background: var(--dark-background); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 16px; text-decoration: none; display: block; cursor: pointer; transition: all 0.3s; }
+        .new-method-pill.active a { color: #000; background: var(--accent-green); border-color: var(--accent-green); }
+
+        /* New Scenario Carousel Section */
+        #explore-scenarios {
+            padding: 0;
+        }
+        
+        #explore-scenarios .container {
+            padding: 0 20px;
+            margin: 0;
+        }
+        
+        #explore-scenarios .container-fullwidth {
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+        }
+        
+        #explore-scenarios h2 {
+            margin: 0 !important;
+            padding: 0;
+        }
+        
+        #explore-scenarios hr {
+            margin: 0 auto 10px auto !important;
+            padding: 0;
+        }
+
+        .scenario-carousel-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16/5.2;
+            margin: 0;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .scenario-carousel-slide {
+            position: absolute;
+            width: 90%;
+            max-width: 1600px;
+            top: 0;
+            left: 50%;
+            margin-left: -45%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.5s ease;
+            cursor: pointer;
+        }
+        
+        .scenario-carousel-slide video {
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: block;
+        }
+        
+        .scenario-carousel-slide.active {
+            transform: scale(1);
+            opacity: 1;
+            z-index: 10;
+        }
+        
+        .scenario-carousel-slide.prev {
+            transform: translateX(-10%) scale(0.8);
+            transform-origin: left;
+            overflow: hidden;
+            opacity: 0.6;
+            padding-left: 5%;
+            z-index: 5;
+        }
+        
+        .scenario-carousel-slide.next {
+            transform: translateX(5%) scale(0.8);
+            transform-origin: right;
+            overflow: hidden;
+            opacity: 0.6;
+            z-index: 5;
+        }
+        
+        .scenario-carousel-slide.hidden {
+            transform: scale(0.3);
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .video-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            z-index: 5;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-top: 4px solid var(--accent-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .scenario-carousel-caption {
+            text-align: center;
+            margin: 10px 0 0 0;
+            padding: 0;
+            color: var(--subtle-text-color);
+        }
+        
+        .scenario-nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            z-index: 20;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .scenario-nav-button.prev { left: 5%; }
+        .scenario-nav-button.next { right: 5%; }
+
+        .scenario-dots {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .scenario-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #444;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .scenario-dot.active {
+            background-color: var(--accent-green);
+            transform: scale(1.2);
+        }
+
+
+        /* Comparison Module */
+        .comparison-row { display: flex; justify-content: center; gap: 20px; align-items: flex-start; }
+        .comparison-container { width: 45%; max-width: 500px; border-radius: 16px; overflow:hidden; border: 1px solid var(--border-color); }
+        .comparison-wrapper { position: relative; width: 100%; }
+        .comparison-wrapper img, .comparison-wrapper video { max-width: 100%; height: auto; display: block; }
+        .comparison-wrapper .video2 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .comparison-wrapper canvas.slider-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* 3D Detection Dot Indicators */
+        .new-scene-pill-3d { margin: 0 6px; cursor: pointer; width: 20px; height: 20px; display: flex; justify-content: center; align-items: center; background: transparent; border: none; padding: 0; }
+        .dot-indicator { width: 8px; height: 8px; border-radius: 50%; background-color: var(--border-color); transition: all 0.3s ease; }
+        .new-scene-pill-3d:hover .dot-indicator { background-color: var(--subtle-text-color); }
+        .new-scene-pill-3d.active .dot-indicator { background-color: var(--accent-green); transform: scale(1.5); box-shadow: 0 0 8px rgba(118, 185, 0, 0.6); }
+        
+        /* Footer */
+        footer { padding: 40px 0; border-top: 1px solid var(--border-color); text-align: center; }
+        #disclaimers p { font-size: 0.8em; color: #777; text-align: center; }
+        #disclaimers a { color: #999; }
+        
+        /* Video Optimization Styles */
+        .lazy-video {
+            background-color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+        
+        .video-loading {
+            color: var(--subtle-text-color);
+            font-size: 0.9em;
+        }
+        
+        .video-placeholder {
+            background: linear-gradient(45deg, #1a1a1a 25%, transparent 25%), 
+                        linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), 
+                        linear-gradient(45deg, transparent 75%, #1a1a1a 75%), 
+                        linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            animation: loading 1s linear infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 0 0, 0 10px, 10px -10px, -10px 0px; }
+            100% { background-position: 20px 20px, 20px 30px, 30px 10px, 10px 20px; }
+        }
+        
+        /* Carousel lazy loading styles */
+        .video-placeholder-container {
+            transition: opacity 0.3s ease;
+        }
+        
+        .play-overlay {
+            transition: all 0.3s ease;
+        }
+        
+        .scenario-carousel-slide:hover .play-overlay {
+            background: rgba(0,0,0,0.8) !important;
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }
+        
+        .scenario-carousel-slide.active .play-overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
+        /* Teaser 图居中 */
+        section.hero.teaser {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        .container.is-max-desktop {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+            padding: 30px 20px 0 20px; 
+        }
+
+        .hero-body {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .teaser-img {
+            width: 100%;
+            max-width: 850px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+/* ChronoEdit Gallery (SeedEdit-style hover cross-fade) */
+        
+        /* Thumbnail transitions */
+        .video-thumbnail {
+            transition: opacity 0.5s ease;
+        }
+        
+        .video-container video {
+            transition: opacity 0.5s ease;
+        }
+        
+        .scenario-carousel-slide:not(.active) .video-thumbnail {
+            opacity: 1;
+        }
+        
+        .scenario-carousel-slide:not(.active) video {
+            opacity: 0;
+        }
+
+        .plot-img {
+            flex: 1;
+            min-width: 350px;
+            text-align: center;
+        }
+
+        .features-container {
+            margin: 30px auto;
+            max-width: 900px;
+            width: 95%;
+        }
+        
+        .features-grid {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            margin: 30px 0;
+            width: 100%;
+        }
+        
+        .feature-card {
+            background-color: rgba(255,255,255,0.05);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Contributors Section */
+        #contributors {
+            background-color: rgba(13, 13, 13, 0.95);
+            padding: 20px 0;
+            border-top: 1px solid var(--border-color);
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        #contributors h2 {
+            text-align: center;
+            color: var(--heading-color);
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        #contributors .contributors-note {
+            text-align: center;
+            font-style: italic;
+            color: var(--subtle-text-color);
+            margin-bottom: 15px;
+            font-size: 0.8em;
+        }
+
+        .contributors-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .contributors-card {
+            background-color: rgba(255,255,255,0.03);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .contributors-card.secondary {
+            border-left-color: rgba(118, 185, 0, 0.6);
+        }
+
+        .contributors-card h3 {
+            color: var(--accent-green);
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .contributors-list {
+            font-size: 0.75em;
+            line-height: 1.3;
+            color: var(--text-color);
+        }
+
+        .contributors-list p {
+            margin: 0 0 4px 0;
+            font-size: inherit;
+            line-height: inherit;
+            color: inherit;
+        }
+
+        .contributors-list p:last-child {
+            margin: 0;
+        }
+
+        .contributors-list strong {
+            color: var(--accent-green);
+        }
+
+        @media (max-width: 768px) {
+            .features-grid {
+                flex-direction: column;
+                margin: 0;
+                gap: 15px;
+            }
+
+            .contributors-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gemini-header {
+                align-items: left;
+            }
+
+            ._content_l9x19_124 {
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 350px) {
+            .plot-img {
+                min-width: 0px;
+            }
+        }
+        
+        /* ChronoEdit Gallery (SeedEdit-style hover cross-fade) */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(260px, 1fr));
+            gap: 20px;
+            width: 95%;
+            max-width: 1080px;
+            margin: 20px auto 80px auto;
+        }
+        .gallery-category {
+            text-align: center;
+            color: var(--heading-color);
+            font-size: 1.4em;
+            margin: 30px auto 10px auto;
+            font-weight: 600;
+        }
+        .gallery-header {
+            width: 95%;
+            max-width: 1080px;
+            margin: 10px auto 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(260px, 1fr));
+            gap: 20px;
+            color: var(--subtle-text-color);
+            text-align: center;
+            font-size: 0.95em;
+            letter-spacing: 0.3px;
+        }
+        .gallery-rows {
+            width: 95%;
+            max-width: 1080px;
+            margin: 10px auto 50px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .gallery-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .gallery-cell {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gallery-cell img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .target-cell {
+            position: relative;
+        }
+        .target-cell .target-img {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        .target-cell .input-hover-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .target-cell:hover .target-img { opacity: 0; }
+        .target-cell:hover .input-hover-img { opacity: 1; }
+        .Manipulation-box {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            color: var(--text-color);
+            font-size: 1em;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .Manipulation-placeholder {
+            color: var(--subtle-text-color);
+            font-style: italic;
+        }
+        .edit-card {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .edit-media {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        .edit-media img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .edit-output {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .edit-media:hover .edit-output {
+            opacity: 1;
+        }
+        .edit-Manipulation {
+            padding: 10px 12px;
+            font-size: 0.95em;
+            text-align: center;
+            color: var(--subtle-text-color);
+        }
+        .gallery-grid.two-col {
+            grid-template-columns: repeat(2, minmax(260px, 1fr));
+             margin-bottom: 60px;
+        }
+        
+        /* Triple-view layout for temporal trajectory */
+        .triple-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            width: 100%;
+        }
+        .triple-item {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .triple-item img, .triple-item video {
+            width: 100%;
+            height: auto;
+            max-height: 540px;
+            object-fit: contain;
+            display: block;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .triple-item img {
+            image-rendering: -webkit-optimize-contrast;
+        }
+        
+        @media (max-width: 768px) {
+            .gallery-grid { grid-template-columns: 1fr; }
+            .gallery-header { grid-template-columns: 1fr; }
+            .gallery-row { grid-template-columns: 1fr; }
+            .triple-row { flex-direction: column; }
+        }
+        ._logo_l9x19_75 {
+            display: flex;
+            align-items: center;
+            gap: 12px; /* 图标与文字间距 */
+        }
+        ._logo_l9x19_75 img.header-logo {
+            display: block;
+            width: auto;
+            height: auto;
+            max-height: 80px;        /* 不超过 header 高度，按需调整（例如 40px） */
+            margin-right: 6px;
+            object-fit: contain;
+        }
+        @media (max-width: 768px) {
+            ._logo_l9x19_75 img.header-logo { height: 32px; }
+            ._logo_l9x19_75 span { font-size: 1em; }
+        }
+    </style>
+</head>
+<body>
+
+<gemini-header id="header" role="banner">
+    <div class="_content_l9x19_124">
+         <div class="_logo_l9x19_75" aria-label="ChronoEdit" style="display:flex; align-items:center; gap:10px;">
+          
+            <span style="font-size: 1.2em; font-weight: 700; letter-spacing: 0.5px; color: #fff;">GeoEdit</span>
+        </div>
+        <nav class="_links_l9x19_177">
+            <ul>
+                <li><a href="#abstract">Abstract</a></li>
+                <li><a href="#Framework">Framework</a></li>
+                <li><a href="#gallery">Gallery</a></li>
+                <li><a href="#Qualitative Comparisons">Qualitative Comparisons</a></li>
+                
+            </ul>
+        </nav>
+    </div>
+</gemini-header>
+
+<main id="main">
+    <section>
+        <div class="container">
+            <h1>
+                <span style="color: var(--gcol);">G</span><span style="color: var(--ccol);">e</span><span style="color: var(--scol);">o</span><span style="color: var(--ecol);">E</span><span style="color: var(--dcol);">d</span><span style="color: var(--icol);">i</span><span style="color: var(--tcol);">t</span>:
+                Geometry-Aware Object Editing via<br>Dual-Branch Denoising
+            </h1>
+            <p class="submission-badge">Anonymous Submission</p>
+        </div>
+        <div class="container is-max-desktop">
+        <div class="hero-body">
+            <img class="teaser-img" src="assets/Image1/gallery_crop.png" alt="Teaser Image" />
+        </div>
+    </div>
+
+        
+    
+    
+    <div class="container">
+       
+        <section id="abstract">
+            <p>
+                Precisely manipulating objects in a single photograph (translation, rotation, scaling) while obeying 3D physical constraints remains unsolved for diffusion-based editors. Current 2D methods lack spatial awareness and produce perspective violations. Forcing structural proxies into the latent space also disrupts variance homogeneity, and the resulting self-attention leakage leads to ghosting and background blur. The core difficulty is asymmetric: the relocated object must follow a rigid geometry, yet the uncovered background needs freedom to synthesize plausible content. We present GeoEdit, a training-free Lift-Manipulate-Render-Denoise pipeline that satisfies both constraints. We decouple scene and object in 3D, align them through point correspondence, and render a geometry-aligned proxy with a structural depth map. A Dual-Branch Denoising stage then refines this proxy: a video diffusion backbone preserves object identity, while 3D constraints are injected into the foreground within a narrow denoising window at matching noise variance (variance-homogeneous injection). The background denoises freely. Because the injected signal matches the native latent statistics, self-attention stays undisturbed. We also introduce GeoEditBench, a pose-aware benchmark covering both translation and rotation. Experiments confirm consistent gains in geometric accuracy, identity fidelity, and background quality, validated by automatic metrics and human studies. Code and data will be publicly released.
+        </section>
+    
+        <section id="Framework">
+        <div class="container" style="padding: 0;">
+            <h2>Framework</h2>
+            <hr>
+        </div>
+        <div style="text-align: center; margin: 30px auto; max-width: 1000px;">
+            <img src="assets/Image1/framework.jpg" alt="Framework Overview" style="width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        </div>
+        <p class="caption-center" style="margin-top: 20px;">
+            <strong>Overview of proposed method.</strong> Top: Decoupled 3D reconstruction and precise alignment pipeline. Bottom: Dual-branch denoising architecture featuring warm-start initialization and variance-homogeneous injection.
+        </p>
+        </section>
+        
+
+        <section id="results">
+                                <div class="container" style="padding: 0;">
+            <h2>Results</h2>
+                     <hr>
+                </div>
+
+            <h3 id="gallery">Gallery</h3>
+            <p class="caption-center" style="margin-top: 10px;">Each example is displayed as Input / Manipulation / Result.</p>
+
+            <div class="gallery-category">Resize</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add16_case1_ori.png" alt="Resize original add16 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add16_case1_ins.png" alt="Resize Manipulation add16 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/resize/add16_case1_t3-10_nonhole.png.png" alt="Resize target add16 case1"><img class="input-hover-img" src="assets/Image1/ours/resize/add16_case1_ori.png" alt="Resize input hover add16 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add2_case1_ori.png" alt="Resize original add2 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add2_case1_ins.png" alt="Resize Manipulation add2 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/resize/add2_case1_t3-10_nonhole.png.png" alt="Resize target add2 case1"><img class="input-hover-img" src="assets/Image1/ours/resize/add2_case1_ori.png" alt="Resize input hover add2 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add33_case1_ori.png" alt="Resize original add33 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add33_case1_ins.png" alt="Resize Manipulation add33 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/resize/add33_case1_t3-10_nonhole.png.png" alt="Resize target add33 case1"><img class="input-hover-img" src="assets/Image1/ours/resize/add33_case1_ori.png" alt="Resize input hover add33 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add3_case2_ori.png" alt="Resize original add3 case2"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add3_case2_ins.png" alt="Resize Manipulation add3 case2"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/resize/add3_case2_t3-10_nonhole.png.png" alt="Resize target add3 case2"><img class="input-hover-img" src="assets/Image1/ours/resize/add3_case2_ori.png" alt="Resize input hover add3 case2"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add9_case2_ori.png" alt="Resize original add9 case2"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/resize/add9_case2_ins.png" alt="Resize Manipulation add9 case2"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/resize/add9_case2_t3-10_nonhole.png.png" alt="Resize target add9 case2"><img class="input-hover-img" src="assets/Image1/ours/resize/add9_case2_ori.png" alt="Resize input hover add9 case2"></div>
+                </div>
+            </div>
+
+            <div class="gallery-category">Translation</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/add14_case1_ori.png" alt="Translation original add14 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/add14_case1_ins.png" alt="Translation Manipulation add14 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/trans/add14_case1_t3-10.png.png" alt="Translation target add14 case1"><img class="input-hover-img" src="assets/Image1/ours/trans/add14_case1_ori.png" alt="Translation input hover add14 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/add52_case1_ori.png" alt="Translation original add52 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/add52_case1_ins.png" alt="Translation Manipulation add52 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/trans/add52_case1_t3-10_nonhole.png.png" alt="Translation target add52 case1"><img class="input-hover-img" src="assets/Image1/ours/trans/add52_case1_ori.png" alt="Translation input hover add52 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/bmx_trees_trans_ori.png" alt="Translation original bmx trees"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/bmx_trees_trans_ins.png" alt="Translation Manipulation bmx trees"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/trans/bmx_trees_trans.png.png" alt="Translation target bmx trees"><img class="input-hover-img" src="assets/Image1/ours/trans/bmx_trees_trans_ori.png" alt="Translation input hover bmx trees"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/flamingo_trans_ori.png" alt="Translation original flamingo"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/flamingo_trans_ins.png" alt="Translation Manipulation flamingo"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/trans/flamingo_trans_nonhole.png.png" alt="Translation target flamingo"><img class="input-hover-img" src="assets/Image1/ours/trans/flamingo_trans_ori.png" alt="Translation input hover flamingo"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/goat_case1_ori.png" alt="Translation original goat case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/trans/goat_case1_ins.png" alt="Translation Manipulation goat case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/trans/goat_case1_1.png.png" alt="Translation target goat case1"><img class="input-hover-img" src="assets/Image1/ours/trans/goat_case1_ori.png" alt="Translation input hover goat case1"></div>
+                </div>
+            </div>
+
+            <div class="gallery-category">Rotation</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add12_case1_ori.png" alt="Rotation original add12 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add12_case1_ins.png" alt="Rotation Manipulation add12 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/rotate/add12_case1_t3-10_nonhole.png.png" alt="Rotation target add12 case1"><img class="input-hover-img" src="assets/Image1/ours/rotate/add12_case1_ori.png" alt="Rotation input hover add12 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add19_case2_ori.png" alt="Rotation original add19 case2"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add19_case2_ins.png" alt="Rotation Manipulation add19 case2"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/rotate/add19_case2_t3-10_nonhole.png.png" alt="Rotation target add19 case2"><img class="input-hover-img" src="assets/Image1/ours/rotate/add19_case2_ori.png" alt="Rotation input hover add19 case2"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add1_case1_ori.png" alt="Rotation original add1 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add1_case1_ins.png" alt="Rotation Manipulation add1 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/rotate/add1_case1_t3-10_nonhole.png.png" alt="Rotation target add1 case1"><img class="input-hover-img" src="assets/Image1/ours/rotate/add1_case1_ori.png" alt="Rotation input hover add1 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add8_case1_ori.png" alt="Rotation original add8 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/add8_case1_ins.png" alt="Rotation Manipulation add8 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/rotate/add8_case1_t3-10.png.png" alt="Rotation target add8 case1"><img class="input-hover-img" src="assets/Image1/ours/rotate/add8_case1_ori.png" alt="Rotation input hover add8 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/other10_case1_ori.png" alt="Rotation original other10 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/rotate/other10_case1_ins.png" alt="Rotation Manipulation other10 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/rotate/other10_case1_t3-10.png.png" alt="Rotation target other10 case1"><img class="input-hover-img" src="assets/Image1/ours/rotate/other10_case1_ori.png" alt="Rotation input hover other10 case1"></div>
+                </div>
+            </div>
+
+            <div class="gallery-category">Replace</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add11_case45_ori.png" alt="Replace original add11 case45"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add11_case45_ins.png" alt="Replace Manipulation add11 case45"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/replace/add11_case45_t3-10_nonhole.png.png" alt="Replace target add11 case45"><img class="input-hover-img" src="assets/Image1/ours/replace/add11_case45_ori.png" alt="Replace input hover add11 case45"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add38_case17_ori.png" alt="Replace original add38 case17"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add38_case17_ins.png" alt="Replace Manipulation add38 case17"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/replace/add38_case17_t3-10.png" alt="Replace target add38 case17"><img class="input-hover-img" src="assets/Image1/ours/replace/add38_case17_ori.png" alt="Replace input hover add38 case17"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add39_case36_ori.png" alt="Replace original add39 case36"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add39_case36_ins.png" alt="Replace Manipulation add39 case36"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/replace/add39_case36_t3-10_nonhole.png.png" alt="Replace target add39 case36"><img class="input-hover-img" src="assets/Image1/ours/replace/add39_case36_ori.png" alt="Replace input hover add39 case36"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add42_case35_ori.png" alt="Replace original add42 case35"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add42_case35_ins.png" alt="Replace Manipulation add42 case35"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/replace/add42_case35_t3-10_nonhole.png.png" alt="Replace target add42 case35"><img class="input-hover-img" src="assets/Image1/ours/replace/add42_case35_ori.png" alt="Replace input hover add42 case35"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add46_case29_ori.png" alt="Replace original add46 case29"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/replace/add46_case29_ins.png" alt="Replace Manipulation add46 case29"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/replace/add46_case29_t3-10.png.png" alt="Replace target add46 case29"><img class="input-hover-img" src="assets/Image1/ours/replace/add46_case29_ori.png" alt="Replace input hover add46 case29"></div>
+                </div>
+            </div>
+
+            <div class="gallery-category">Camera</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add26_case1_ori.png" alt="Camera original add26 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add26_case1_ins.png" alt="Camera Manipulation add26 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/camera/add26_case1_t3-10.png.png" alt="Camera target add26 case1"><img class="input-hover-img" src="assets/Image1/ours/camera/add26_case1_ori.png" alt="Camera input hover add26 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add27_case1_ori.png" alt="Camera original add27 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add27_case1_ins.png" alt="Camera Manipulation add27 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/camera/add27_case1_t3-10.png.png" alt="Camera target add27 case1"><img class="input-hover-img" src="assets/Image1/ours/camera/add27_case1_ori.png" alt="Camera input hover add27 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add28_case1_ori.png" alt="Camera original add28 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add28_case1_ins.png" alt="Camera Manipulation add28 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/camera/add28_case1_t3-10.png.png" alt="Camera target add28 case1"><img class="input-hover-img" src="assets/Image1/ours/camera/add28_case1_ori.png" alt="Camera input hover add28 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add30_case1_ori.png" alt="Camera original add30 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add30_case1_ins.png" alt="Camera Manipulation add30 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/camera/add30_case1_t3-10.png.png" alt="Camera target add30 case1"><img class="input-hover-img" src="assets/Image1/ours/camera/add30_case1_ori.png" alt="Camera input hover add30 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add32_case1_ori.png" alt="Camera original add32 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/camera/add32_case1_ins.png" alt="Camera Manipulation add32 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/camera/add32_case1_t3-10.png.png" alt="Camera target add32 case1"><img class="input-hover-img" src="assets/Image1/ours/camera/add32_case1_ori.png" alt="Camera input hover add32 case1"></div>
+                </div>
+            </div>
+
+            <div class="gallery-category">Combination</div>
+            <div class="gallery-header">
+                <div>Input (Original)</div>
+                <div>Manipulation</div>
+                <div>Result</div>
+            </div>
+            <div class="gallery-rows">
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add25_case1_ori.png" alt="Combination original add25 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add25_case1_ins.png" alt="Combination Manipulation add25 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/combination/add25_case1_t3-10_nonhole.png.png" alt="Combination target add25 case1"><img class="input-hover-img" src="assets/Image1/ours/combination/add25_case1_ori.png" alt="Combination input hover add25 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add54_case1_ori.png" alt="Combination original add54 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add54_case1_ins.png" alt="Combination Manipulation add54 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/combination/add54_case1_t3-10_nonhole.png.png" alt="Combination target add54 case1"><img class="input-hover-img" src="assets/Image1/ours/combination/add54_case1_ori.png" alt="Combination input hover add54 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add6_case1_ori.png" alt="Combination original add6 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/add6_case1_ins.png" alt="Combination Manipulation add6 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/combination/add6_case1_t3-10.png.png" alt="Combination target add6 case1"><img class="input-hover-img" src="assets/Image1/ours/combination/add6_case1_ori.png" alt="Combination input hover add6 case1"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/mallard-water_ori.png" alt="Combination original car roundabout case10"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/mallard-water_ins.png" alt="Combination Manipulation car roundabout case10"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/combination/mallard-water_case3.png" alt="Combination target car roundabout case10"><img class="input-hover-img" src="assets/Image1/ours/combination/mallard-water_ori.png" alt="Combination input hover car roundabout case10"></div>
+                </div>
+                <div class="gallery-row">
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/other4_case1_ori.png" alt="Combination original other4 case1"></div>
+                    <div class="gallery-cell"><img src="assets/Image1/ours/combination/other4_case1_ins.png" alt="Combination Manipulation other4 case1"></div>
+                    <div class="gallery-cell target-cell"><img class="target-img" src="assets/Image1/ours/combination/other4_case1_t3-10.png.png" alt="Combination target other4 case1"><img class="input-hover-img" src="assets/Image1/ours/combination/other4_case1_ori.png" alt="Combination input hover other4 case1"></div>
+                </div>
+            </div>
+
+        </section>
+        <section id="Qualitative Comparisons">
+        <div class="container" style="padding: 0;">
+            <h2>Qualitative Comparisons</h2>
+            <hr>
+        </div>
+        <div style="text-align: center; margin: 30px auto; max-width: 1200px;">
+            <img src="assets/Image1/supp_bear_compare.png" alt="Framework Overview" style="width: 100%; height: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        </div>
+        <p class="caption-center" style="margin-top: 20px;">
+            <strong>Qualitative comparisons between baselines and our approach.</strong>  Our model achieves superior performance compared to state-of-the-art methods in background preservation and geometric consistency.
+        </p>
+        </section>
+
+        </section>           
+    </div>
+</main>
+</body>
+</html>
